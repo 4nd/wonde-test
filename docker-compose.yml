@@ -1,0 +1,54 @@
+version: '3.5'
+services:
+    php:
+        build:
+            context: ./docker/php
+        working_dir: /var/www
+        networks: &networks
+            - "wonde_network"
+        volumes: &volumes
+            - shared:/shared:cached
+            - ./:/var/www
+        environment: &php-env
+            - "COMPOSER_ALLOW_XDEBUG=1"
+            - "PHP_IDE_CONFIG=serverName=wonde.test"
+
+    php-xdebug:
+        build:
+            context: ./docker/php-xdebug
+        working_dir: /var/www
+        networks: *networks
+        volumes: *volumes
+        environment: *php-env
+
+    mysql:
+        image: mysql:8-oracle
+        networks: *networks
+        volumes:
+            - dbdata:/var/lib/mysql
+        environment:
+            - "MYSQL_DATABASE=wonde"
+            - "MYSQL_USER=wonde"
+            - "MYSQL_PASSWORD=secret"
+            - "MYSQL_ROOT_PASSWORD=secret"
+        ports:
+            - "3306:3306"
+
+    web:
+        build:
+            context: ./docker/nginx
+        depends_on:
+            - php
+        working_dir: /var/www
+        networks: *networks
+        ports:
+            - 80:80
+        volumes: *volumes
+
+volumes:
+    dbdata:
+    shared:
+
+networks:
+    wonde_network:
+        driver: "bridge"
