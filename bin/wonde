@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+
+PHP_USER=www-data
+THIS_NAME=stats
+COMMAND_DOCKER_EXEC_PHP="docker-compose exec -u $PHP_USER php"
+COMMAND_DOCKER_EXEC_PHP_TTY="docker-compose exec -T -u $PHP_USER php"
+COMMAND_DOCKER_EXEC_PHP_XDEBUG="docker-compose exec -e XDEBUG_CONFIG='remote_autostart=1' -u $PHP_USER php-xdebug"
+COMMAND_DOCKER_EXEC_PHP_XDEBUG_TTY="docker-compose exec -T -e XDEBUG_CONFIG='remote_autostart=1' -u $PHP_USER php-xdebug"
+COMMAND_CONSOLE="php artisan"
+COMPOSE_FILE="docker-compose.yml"
+ESC_SEQ="\x1b["
+COL_RESET=${ESC_SEQ}"39;49;00m"
+COL_WHITE='\033[1;37m'
+COL_LYELLOW=${ESC_SEQ}"33;01m"
+COL_LGREEN=${ESC_SEQ}"32;01m"
+COL_CYAN=${ESC_SEQ}"0;36m"
+COL_GREEN=${ESC_SEQ}"0;32m"
+COL_MAGENTA=${ESC_SEQ}"0;35m"
+TICK="\xE2\x9C\x94"
+CONFIRM_TICK="${COL_GREEN}${TICK}${COL_RESET}"
+
+# Source the ".env" file so dev environment variables are available...
+if [ -f ./.env ]; then
+    source ./.env
+fi
+
+showHelp() {
+
+    usage="${COL_LYELLOW}Usage:\n${COL_RESET}"
+    usage="$usage  $THIS_NAME <command>"
+
+    commands="${COL_LYELLOW}Commands:\n${COL_RESET}"
+    commands="$commands  artisan [params]         Run Symfony console in container\n"
+    commands="$commands  artisan:xdebug [params]  Run Symfony console in container with xdebug\n"
+    commands="$commands  composer [params]        Run composer in container\n"
+    commands="$commands  install                  Runs composer install, creates empty db if missing\n"
+    commands="$commands  up                       Starts all containers defined in ${COL_LGREEN}${COMPOSE_FILE}${COL_RESET}\n"
+    commands="$commands  down                     Stops all containers defined in ${COL_LGREEN}${COMPOSE_FILE}${COL_RESET}\n"
+    commands="$commands  restart                  Restarts all containers defined in ${COL_LGREEN}${COMPOSE_FILE}${COL_RESET}\n"
+    commands="$commands  help                     Shows Help screen\n"
+    commands="$commands  ps                       Display list of all running containers\n"
+    commands="$commands  sh                       Shell on to the container (as www-data)\n"
+    commands="$commands  root                     Shell on to the container (as root)\n"
+    commands="$commands  php [params]             Execute any PHP command in container\n"
+    commands="$commands  npm [params]             Execute any NPM command in container\n"
+
+    examples="${COL_LYELLOW}Examples:\n${COL_RESET}"
+    examples="$examples  ${COL_CYAN}$ $THIS_NAME up${COL_RESET}\n"
+    examples="$examples  ${COL_CYAN}$ $THIS_NAME down${COL_RESET}\n"
+    examples="$examples  ${COL_CYAN}$ $THIS_NAME composer require <vendor/package>${COL_RESET}\n"
+    examples="$examples  ${COL_CYAN}$ $THIS_NAME artisan migrate${COL_RESET}\n"
+    examples="$examples  ${COL_CYAN}$ $THIS_NAME php -v${COL_RESET}\n"
+
+    printf "\n"
+    printf "$usage\n\n"
+    printf "$commands\n"
+    printf "$examples\n"
+
+}
+
+# Ensure that Docker is running...
+if ! docker info > /dev/null 2>&1; then
+    echo -e "${COL_WHITE}Docker is not running.${COL_RESET}" >&2
+
+    exit 1
+fi
+
+if [ $# -gt 0 ]; then
+    # Proxy PHP commands to the "php" binary on the application container...
+    if [ "$1" == "php" ]; then
+        shift 1
+        $COMMAND_DOCKER_EXEC_PHP php "$@"
+
+    # Proxy NPM commands to the "npm" binary on the node container...
+    elif [ "$1" == "npm" ]; then
+        shift 1
+        $COMMAND_DOCKER_RUN_NODE npm "$@"
+
+    # Proxy Composer commands to the "composer" binary on the application container...
+    elif [ "$1" == "composer" ]; then
+        shift 1
+        $COMMAND_DOCKER_EXEC_PHP composer "$@"
+
+    elif [ "$1" == "install" ]; then
+        $COMMAND_DOCKER_EXEC_PHP composer -n install
+        $COMMAND_DOCKER_EXEC_PHP touch database/database.sqlite
+
+    elif [ "$1" == "artisan" ]; then
+        shift 1
+        $COMMAND_DOCKER_EXEC_PHP $COMMAND_CONSOLE "$@"
+
+    elif [ "$1" == "artisan:xdebug" ]; then
+        shift 1
+        $COMMAND_DOCKER_EXEC_PHP_XDEBUG sh -c "$COMMAND_CONSOLE $@"
+
+    elif [ "$1" == "sync-tickets" ]; then
+        shift 1
+        $COMMAND_DOCKER_EXEC_PHP sh -c "$COMMAND_CONSOLE jira:sync-tickets"
+
+    elif [ "$1" == "sh" ]; then
+        $COMMAND_DOCKER_EXEC_PHP sh
+
+    elif [ "$1" == "bash" ]; then
+        $COMMAND_DOCKER_EXEC_PHP bash
+
+    elif [ "$1" == "root" ]; then
+        docker-compose exec php bash
+
+    elif [ "$1" == "up" ]; then
+        docker-compose up -d
+
+    elif [ "$1" == "down" ]; then
+        docker-compose down
+
+    elif [ "$1" == "restart" ]; then
+        docker-compose down
+        docker-compose up -d --build --force-recreate --remove-orphans
+
+    elif [ "$1" == "ps" ]; then
+        docker-compose ps
+
+    else
+      showHelp
+
+    fi
+else
+    showHelp
+fi
