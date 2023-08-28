@@ -1,26 +1,26 @@
 ## Wonde Technical Test
 
 ### Get up and running
-1. Create local '.env' configuration file
+1. Create local '.env' configuration file  
    `cp .env.example .env`
-2. Edit ports to ensure no conflicts for Web(80) and Mysql(3306) and enter WONDE_TOKEN and WONDE_SCHOOL_ID
+2. Edit ports to ensure no conflicts for Web(80) and Mysql(3306) and enter WONDE_TOKEN and WONDE_SCHOOL_ID  
    `vi .env`
-3. Bring up docker containers
+3. Bring up docker containers  
    `./bin/wonde up`
-4. Install composer packages
+4. Install composer packages  
    `./bin/wonde composer install`
-5. Create unique encryption key
+5. Create unique encryption key  
    `./bin/wonde artisan key:generate` 
-6. Migrate database
+6. Migrate database  
    `./bin/wonde artisan migrate`
-7. Compile assets 
-   `./bin/wonde npm install`
+7. Compile assets   
+   `./bin/wonde npm install`  
    `./bin/wonde npm run build`
-8. Synchronise data from Wonde API
+8. Synchronise data from Wonde API  
    `./bin/wonde artisan app:sync`
 9. Browse to site
    `http://127.0.0.1:80` or whichever port specified in `.env`
-10. Review other commands in `wonde` command
+10. Review other commands in `wonde` command  
    `./bin/wonde`
 
 ### Rationale
