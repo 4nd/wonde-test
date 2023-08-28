@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 PHP_USER=www-data
-THIS_NAME=stats
+THIS_NAME=wonde
 COMMAND_DOCKER_EXEC_PHP="docker-compose exec -u $PHP_USER php"
 COMMAND_DOCKER_EXEC_PHP_TTY="docker-compose exec -T -u $PHP_USER php"
 COMMAND_DOCKER_EXEC_PHP_XDEBUG="docker-compose exec -e XDEBUG_CONFIG='remote_autostart=1' -u $PHP_USER php-xdebug"
 COMMAND_DOCKER_EXEC_PHP_XDEBUG_TTY="docker-compose exec -T -e XDEBUG_CONFIG='remote_autostart=1' -u $PHP_USER php-xdebug"
+COMMAND_DOCKER_RUN_NODE="docker-compose run --publish=5173:5173 node"
 COMMAND_CONSOLE="php artisan"
 COMPOSE_FILE="docker-compose.yml"
 ESC_SEQ="\x1b["
